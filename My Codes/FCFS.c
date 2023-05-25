@@ -66,4 +66,24 @@ Average Waiting Time: 8    Average Turnaround Time: 16
 
 
 
+
+Changes:-
+
+Removed the clrscr() and getch() functions as they are not part of the standard C library.
+
+Initialized totwt and tottt variables to 0 to avoid potential garbage values.
+
+Added proper prompts and formatted input for the number of processes and burst time for each process.
+
+Fixed the loop conditions in the while loop and converted it to a for loop to correctly calculate the waiting time and turnaround time for each process.
+
+Corrected the loop conditions in the final while loop to properly print the process details.
+
+Accumulated the waiting time and turnaround time for each process.
+
+Calculated the average waiting time and average turnaround time outside the loop.
+
+Added appropriate comments to explain the changes made.
+
+
 */
