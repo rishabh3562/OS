@@ -1,1 +1,0 @@
-  scanf(" %[^\n]", buffer);

@@ -1,88 +1,120 @@
 #include <stdio.h>
-#include <string.h>
+#include <pthread.h>
+#include <semaphore.h>
 
-void readfile();
-void writefile();
+#define N 5
+#define THINKING 0
+#define HUNGRY 1
+#define EATING 2
+#define LEFT (ph_num + 4) % N
+#define RIGHT (ph_num + 1) % N
 
-int a, b, i = 0;
-char c[40];
-char buffer[89];
-char *g;
-FILE *fr, *fw;
+sem_t mutex;
+sem_t S[N];
+int state[N];
+int phil_num[N] = {0, 1, 2, 3, 4};
 
-void main()
+void *philosopher(void *num);
+void take_fork(int);
+void put_fork(int);
+void test(int);
+
+int main()
 {
-    printf("\n1. Read\n2. Write");
-    printf("\nUSER A, enter your choice: ");
-    scanf("%d", &a);
-    printf("USER B, enter your choice: ");
-    scanf("%d", &b);
-    getchar(); // Consume the newline character from the previous input
+    int i;
+    pthread_t thread_id[N];
 
-    if (a == 1 && b == 1)
+    sem_init(&mutex, 0, 1);
+    for (i = 0; i < N; i++)
+        sem_init(&S[i], 0, 0);
+
+    for (i = 0; i < N; i++)
     {
-        readfile();
+        pthread_create(&thread_id[i], NULL, philosopher, &phil_num[i]);
+        printf("Philosopher %d is thinking\n", i + 1);
     }
-    else if (a == 1 && b == 2)
+
+    for (i = 0; i < N; i++)
+        pthread_join(thread_id[i], NULL);
+
+    return 0;
+}
+
+void *philosopher(void *num)
+{
+    while (1)
     {
-        writefile();
-        readfile();
-    }
-    else if (a == 2 && b == 1)
-    {
-        readfile();
-        writefile();
-    }
-    else if (a == 2 && b == 2)
-    {
-        printf("Both users are not allowed to write.\n");
-        return;
+        int *i = num;
+        sleep(1);
+        take_fork(*i);
+        sleep(0);
+        put_fork(*i);
     }
 }
 
-void readfile()
+void take_fork(int ph_num)
 {
-    fr = fopen("filename.c", "r");
-    if (fr == NULL)
-    {
-        printf("File could not be opened.\n");
-        return;
-    }
-
-    printf("\nFile content is:\n");
-    while (fgets(c, sizeof(c), fr) != NULL)
-    {
-        printf("%s", c);
-    }
-
-    fclose(fr);
+    sem_wait(&mutex);
+    state[ph_num] = HUNGRY;
+    printf("Philosopher %d is Hungry\n", ph_num + 1);
+    test(ph_num);
+    sem_post(&mutex);
+    sem_wait(&S[ph_num]);
+    sleep(1);
 }
 
-void writefile()
+void test(int ph_num)
 {
-    printf("Enter your content to write:\n");
-    fgets(buffer, sizeof(buffer), stdin);
-    fw = fopen("filename.c", "w");
-    if (fw == NULL)
+    if (state[ph_num] == HUNGRY && state[LEFT] != EATING && state[RIGHT] != EATING)
     {
-        printf("File could not be opened.\n");
-        return;
+        state[ph_num] = EATING;
+        sleep(2);
+        printf("Philosopher %d takes fork %d and %d\n", ph_num + 1, LEFT + 1, ph_num + 1);
+        printf("Philosopher %d is Eating\n", ph_num + 1);
+        sem_post(&S[ph_num]);
     }
-
-    fputs(buffer, fw);
-    fclose(fw);
 }
 
-/*
+void put_fork(int ph_num)
+{
+    sem_wait(&mutex);
+    state[ph_num] = THINKING;
+    printf("Philosopher %d putting fork %d and %d down\n", ph_num + 1, LEFT + 1, ph_num + 1);
+    printf("Philosopher %d is thinking\n", ph_num + 1);
+    test(LEFT);
+    test(RIGHT);
+    sem_post(&mutex);
+}
 
-1. Read
-2. Write
-USER A, enter your choice: 1
-USER B, enter your choice: 2
-Enter your content to write:
-This is a sample text.
 
-File content:
-This is a sample text.
+"
+Philosopher 1 is thinking
+Philosopher 2 is thinking
+Philosopher 3 is thinking
+Philosopher 4 is thinking
+Philosopher 5 is thinking
+Philosopher 1 is Hungry
+Philosopher 2 is thinking
+Philosopher 3 is thinking
+Philosopher 4 is thinking
+Philosopher 5 is thinking
+Philosopher 1 takes fork 5 and 1
+Philosopher 1 is Eating
+Philosopher 2 is Hungry
+Philosopher 3 is thinking
+Philosopher 4 is thinking
+Philosopher 5 is thinking
+Philosopher 1 putting fork 5 and 1 down
+Philosopher 1 is thinking
+Philosopher 2 takes fork 1 and 2
+Philosopher 2 is Eating
+Philosopher 3 is Hungry
+Philosopher 4 is thinking
+Philosopher 5 is thinking
+Philosopher 2 putting fork 1 and 2 down
+Philosopher 2 is thinking
+Philosopher 3 takes fork 2 and 3
+Philosopher 3 is Eating
+...
 
-*/
+"

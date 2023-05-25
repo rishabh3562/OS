@@ -1,307 +1,134 @@
 #include <stdio.h>
 
-int n, pg[30], fr[10];
+int main() {
+    int processes, resources, i, j, k;
 
-void fifo();
-void optimal();
-void lru();
+    printf("Enter the number of processes: ");
+    scanf("%d", &processes);
 
-int main()
-{
-    int i, ch;
-    printf("\nEnter total number of pages: ");
-    scanf("%d", &n);
-    printf("\nEnter sequence: ");
-    for (i = 0; i < n; i++) // accepting sequence
-        scanf("%d", &pg[i]);
+    printf("Enter the number of resources: ");
+    scanf("%d", &resources);
 
-    do
-    {
-        printf("\n\tMENU\n");
-        printf("\n1) FIFO");
-        printf("\n2) OPTIMAL");
-        printf("\n3) LRU");
-        printf("\n4) Exit");
-        printf("\nEnter your choice: ");
-        scanf("%d", &ch);
+    int allocation[processes][resources];
+    int max[processes][resources];
+    int available[resources];
+    int need[processes][resources];
+    int finish[processes];
+    int safeSequence[processes];
+    int work[resources];
 
-        switch (ch)
-        {
-        case 1:
-            fifo();
-            break;
-        case 2:
-            optimal();
-            break;
-        case 3:
-            lru();
-            break;
+    // Input allocation matrix
+    printf("\nEnter the allocation matrix:\n");
+    for (i = 0; i < processes; i++) {
+        printf("Process %d: ", i + 1);
+        for (j = 0; j < resources; j++) {
+            scanf("%d", &allocation[i][j]);
         }
-    } while (ch != 4);
+    }
+
+    // Input maximum matrix
+    printf("\nEnter the maximum matrix:\n");
+    for (i = 0; i < processes; i++) {
+        printf("Process %d: ", i + 1);
+        for (j = 0; j < resources; j++) {
+            scanf("%d", &max[i][j]);
+        }
+    }
+
+    // Input available resources
+    printf("\nEnter the available resources:\n");
+    for (i = 0; i < resources; i++) {
+        printf("Resource %d: ", i + 1);
+        scanf("%d", &available[i]);
+    }
+
+    // Calculate need matrix
+    for (i = 0; i < processes; i++) {
+        for (j = 0; j < resources; j++) {
+            need[i][j] = max[i][j] - allocation[i][j];
+        }
+    }
+
+    // Initialize finish array
+    for (i = 0; i < processes; i++) {
+        finish[i] = 0;
+    }
+
+    // Initialize work array
+    for (i = 0; i < resources; i++) {
+        work[i] = available[i];
+    }
+
+    // Banker's Algorithm
+    int count = 0;
+    while (count < processes) {
+        int found = 0;
+        for (i = 0; i < processes; i++) {
+            if (finish[i] == 0) {
+                int safe = 1;
+                for (j = 0; j < resources; j++) {
+                    if (need[i][j] > work[j]) {
+                        safe = 0;
+                        break;
+                    }
+                }
+                if (safe) {
+                    safeSequence[count] = i;
+                    count++;
+                    finish[i] = 1;
+                    found = 1;
+                    for (j = 0; j < resources; j++) {
+                        work[j] += allocation[i][j];
+                    }
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            break; // Deadlock detected
+        }
+    }
+
+    if (count == processes) {
+        printf("\nSystem is in a safe state.\nSafe sequence: ");
+        for (i = 0; i < processes; i++) {
+            printf("%d ", safeSequence[i]);
+        }
+        printf("\n");
+    } else {
+        printf("\nDeadlock detected. System is not in a safe state.\n");
+    }
 
     return 0;
 }
 
-void fifo()
-{
-    int i, f, r, s, count, flag, num, psize;
-    f = 0;
-    r = 0;
-    s = 0;
-    flag = 0;
-    count = 0;
-    printf("\nEnter size of page frame: ");
-    scanf("%d", &psize);
-    for (i = 0; i < psize; i++)
-    {
-        fr[i] = -1;
-    }
-    while (s < n)
-    {
-        flag = 0;
-        num = pg[s];
-        for (i = 0; i < psize; i++)
-        {
-            if (num == fr[i])
-            {
-                s++;
-                flag = 1;
-                break;
-            }
-        }
-        if (flag == 0)
-        {
-            if (r < psize)
-            {
-                fr[r] = pg[s];
-                r++;
-                s++;
-                count++;
-            }
-            else
-            {
-                if (f < psize)
-                {
-                    fr[f] = pg[s];
-                    s++;
-                    f++;
-                    count++;
-                }
-                else
-                    f = 0;
-            }
-        }
-        printf("\n");
-        for (i = 0; i < psize; i++)
-        {
-            printf("%d\t", fr[i]);
-        }
-    }
-    printf("\nPage Faults = %d", count);
-}
-
-void optimal()
-{
-    int count[10], i, j, k, fault, f, flag, temp, current, c, dist, max, m, cnt, p, x;
-    fault = 0;
-    dist = 0;
-    k = 0;
-    printf("\nEnter frame size: ");
-    scanf("%d", &f);
-    // initilizing distance and frame array
-    for (i = 0; i < f; i++)
-    {
-        count[i] = 0;
-        fr[i] = -1;
-    }
-    for (i = 0; i < n; i++)
-    {
-        flag = 0;
-        temp = pg[i];
-        for (j = 0; j < f; j++)
-        {
-            if (temp == fr[j])
-            {
-                flag = 1;
-                break;
-            }
-        }
-        if ((flag == 0) && (k < f))
-        {
-            fault++;
-            fr[k] = temp;
-            k++;
-        }
-        else if ((flag == 0) && (k == f))
-        {
-            fault++;
-            for (cnt = 0; cnt < f; cnt++)
-            {
-                current = fr[cnt];
-                for (c = i; c < n; c++)
-                {
-                    if (current != pg[c])
-                        count[cnt]++;
-                    else
-                        break;
-                }
-            }
-            max = 0;
-            for (m = 0; m < f; m++)
-            {
-                if (count[m] > max)
-                {
-                    max = count[m];
-                    p = m;
-                }
-            }
-            fr[p] = temp;
-        }
-        printf("\n");
-        for (x = 0; x < f; x++)
-        {
-            printf("%d\t", fr[x]);
-        }
-    }
-    printf("\nTotal number of faults = %d", fault);
-}
-
-void lru()
-{
-    int count[10], i, j, k, fault, f, flag, temp, current, c, dist, max, m, cnt, p, x;
-    fault = 0;
-    dist = 0;
-    k = 0;
-    printf("\nEnter frame size: ");
-    scanf("%d", &f);
-    // initilizing distance and frame array
-    for (i = 0; i < f; i++)
-    {
-        count[i] = 0;
-        fr[i] = -1;
-    }
-    for (i = 0; i < n; i++)
-    {
-        flag = 0;
-        temp = pg[i];
-        for (j = 0; j < f; j++)
-        {
-            if (temp == fr[j])
-            {
-                flag = 1;
-                break;
-            }
-        }
-        if ((flag == 0) && (k < f))
-        {
-            fault++;
-            fr[k] = temp;
-            k++;
-        }
-        else if ((flag == 0) && (k == f))
-        {
-            fault++;
-            for (cnt = 0; cnt < f; cnt++)
-            {
-                current = fr[cnt];
-                for (c = i; c > 0; c--)
-                {
-                    if (current != pg[c])
-                        count[cnt]++;
-                    else
-                        break;
-                }
-            }
-            max = 0;
-            for (m = 0; m < f; m++)
-            {
-                if (count[m] > max)
-                {
-                    max = count[m];
-                    p = m;
-                }
-            }
-            fr[p] = temp;
-        }
-        printf("\n");
-        for (x = 0; x < f; x++)
-        {
-            printf("%d\t", fr[x]);
-        }
-    }
-    printf("\nTotal number of faults = %d", fault);
-}
 
 /*
 
-Enter total number of pages: 7
+Enter the number of processes: 5
+Enter the number of resources: 3
 
-Enter sequence: 2 3 2 1 5 2 4
+Enter the allocation matrix:
+Process 1: 0 1 0
+Process 2: 2 0 0
+Process 3: 3 0 2
+Process 4: 2 1 1
+Process 5: 0 0 2
 
-        MENU
+Enter the maximum matrix:
+Process 1: 7 5 3
+Process 2: 3 2 2
+Process 3: 9 0 2
+Process 4: 2 2 2
+Process 5: 4 3 3
 
-1) FIFO
-2) OPTIMAL
-3) LRU
-4) Exit
-Enter your choice: 1
+Enter the available resources:
+Resource 1: 3
+Resource 2: 3
+Resource 3: 2
 
-Enter size of page frame: 3
-
-2       -1      -1
-2       3       -1
-2       3       1
-2       3       1
-5       3       1
-5       2       1
-5       2       4
-Page Faults = 5
-
-        MENU
-
-1) FIFO
-2) OPTIMAL
-3) LRU
-4) Exit
-Enter your choice: 2
-
-Enter frame size: 3
-
-2       -1      -1
-2       3       -1
-2       3       1
-2       3       1
-5       3        4
-5       2        4
-5       2        1
-Total number of faults = 6
-
-        MENU
-
-1) FIFO
-2) OPTIMAL
-3) LRU
-4) Exit
-Enter your choice: 3
-
-Enter frame size: 3
-
-2       -1      -1
-2       3       -1
-2       3       1
-2       3       1
-5       3       5
-5       2       5
-2       3       5
-Total number of faults = 6
-
-        MENU
-
-1) FIFO
-2) OPTIMAL
-3) LRU
-4) Exit
-Enter your choice: 4
+System is in a safe state.
+Safe sequence: 1 3 4 2 0
 
 
 */

@@ -39,4 +39,3 @@ printf("\nThe consumed value is %d", consume); out = (out+1)%bufsize;
 break;
 
 }	}	}
-
