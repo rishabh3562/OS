@@ -64,23 +64,3 @@ int main()
 
     return 0;
 }
-
-/*
-
-Enter the number of processes: 4
-Enter the burst time for process 1: 8
-Enter the burst time for process 2: 5
-Enter the burst time for process 3: 10
-Enter the burst time for process 4: 3
-
-Process ID   Burst Time   Waiting Time   Turnaround Time
-
-    4           3             0              3
-    2           5             3              8
-    1           8             8              16
-    3           10            16             26
-
-Average Waiting Time: 6.75    Average Turnaround Time: 13.25
-
-
-*/
